@@ -1,0 +1,30 @@
+{
+    "name": "Gemini Screenshot Processor",
+    "description": "Processes screenshots with Gemini",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+      "activeTab",
+      "scripting",
+      "tabs",
+      "storage"
+    ],
+    "host_permissions": [
+      "https://gemini.google.com/*"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://gemini.google.com/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+
+      }
+    }
+  }

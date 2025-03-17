@@ -1,0 +1,17 @@
+{
+    "name": "gemini-screenshot-processor",
+    "version": "1.0.0",
+    "description": "App that processes screenshots with Gemini AI",
+    "main": "main.js",
+    "scripts": {
+      "start": "electron .",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "electron": "^28.1.0",
+      "screenshot-desktop": "^1.15.0",
+      "ws": "^8.14.2"
+    }
+  }

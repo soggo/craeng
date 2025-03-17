@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini Screenshot Processor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+    }
+    #instruction {
+      font-size: 18px;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+    }
+    #status {
+      font-size: 16px;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+    }
+    #result {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    #error {
+      color: #ff6b6b;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="instruction">Ctrl+Shift+S: Screenshot | Ctrl+Shift+A: Multi-mode</div>
+  <div id="status">Ready</div>
+  <div id="result"></div>
+  <div id="error"></div>
+  
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Elements
+    const instructionEl = document.getElementById('instruction');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const errorEl = document.getElementById('error');
+    
+    // Handle instruction updates
+    ipcRenderer.on('update-instruction', (event, instruction) => {
+      instructionEl.textContent = instruction;
+      instructionEl.style.display = 'block';
+    });
+    
+    // Handle hiding instruction
+    ipcRenderer.on('hide-instruction', () => {
+      instructionEl.style.display = 'none';
+    });
+    
+    // Handle status updates
+    ipcRenderer.on('update-status', (event, status) => {
+      statusEl.textContent = status;
+    });
+    
+    // Handle result updates
+    ipcRenderer.on('analysis-result', (event, result) => {
+      resultEl.textContent = result;
+      statusEl.textContent = 'Analysis complete';
+    });
+    
+    // Handle clearing result
+    ipcRenderer.on('clear-result', () => {
+      resultEl.textContent = '';
+      errorEl.style.display = 'none';
+    });
+    
+    // Handle errors
+    ipcRenderer.on('error', (event, error) => {
+      errorEl.textContent = `Error: ${error}`;
+      errorEl.style.display = 'block';
+      statusEl.textContent = 'Error occurred';
+    });
+  </script>
+</body>
+</html>

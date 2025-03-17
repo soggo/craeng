@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini Screenshot Processor</title>
+  <style>
+    body {
+      width: 300px;
+      font-family: Arial, sans-serif;
+      padding: 10px;
+    }
+    h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .status {
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+    }
+    .status.connected {
+      background-color: #d1e7dd;
+      color: #0f5132;
+    }
+    .status.disconnected {
+      background-color: #f8d7da;
+      color: #842029;
+    }
+    .btn {
+      background-color: #0d6efd;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #0b5ed7;
+    }
+  </style>
+</head>
+<body>
+  <h3>Gemini Screenshot Processor</h3>
+  
+  <div id="connectionStatus" class="status">Checking connection...</div>
+  
+  <button id="openGemini" class="btn">Open Gemini</button>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
