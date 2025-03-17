@@ -27,9 +27,23 @@ class WebSocketServer {
           console.log('Received from extension:', data);
           
           if (data.action === 'geminiResult') {
+            // More detailed logging
+            console.log('Result details:', data.result ? 'Result present' : 'No result', 
+                        typeof data.result, 
+                        data.result && data.result.text ? 'Has text' : 'No text');
+            
             // Send result to the renderer process
             if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-              this.mainWindow.webContents.send('analysis-result', data.result);
+              // Check if result is present and has text
+              if (data.result && data.result.text) {
+                this.mainWindow.webContents.send('analysis-result', data.result.text);
+              } else if (data.result) {
+                // If result is a string or another primitive
+                this.mainWindow.webContents.send('analysis-result', 
+                  typeof data.result === 'string' ? data.result : JSON.stringify(data.result));
+              } else {
+                this.mainWindow.webContents.send('error', 'Received empty result from Gemini');
+              }
             }
           } else if (data.action === 'error') {
             // Handle errors
@@ -88,5 +102,27 @@ class WebSocketServer {
     }
   }
 }
+
+ws.on('message', (message) => {
+  try {
+    const data = JSON.parse(message.toString());
+    
+    // Don't log heartbeats to avoid noise
+    if (data.action !== 'heartbeat') {
+      console.log('Received from extension:', data);
+    }
+    
+    if (data.action === 'heartbeat') {
+      // Respond to heartbeat
+      ws.send(JSON.stringify({ action: 'heartbeat-ack' }));
+    } else if (data.action === 'geminiResult') {
+      // Handle result (existing code)
+    } else if (data.action === 'error') {
+      // Handle errors (existing code)
+    }
+  } catch (error) {
+    console.error('Error processing message from extension:', error);
+  }
+});
 
 module.exports = new WebSocketServer();

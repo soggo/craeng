@@ -2,19 +2,40 @@
 let socket = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
+let heartbeatInterval = null;
 
 function connectWebSocket() {
+  if (socket && (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)) {
+    console.log('WebSocket already connected or connecting');
+    return;
+  }
+  
   socket = new WebSocket('ws://localhost:8765');
   
   socket.onopen = () => {
     console.log('Connected to Electron app');
     reconnectAttempts = 0;
+    
+    // Set up heartbeat to keep connection alive
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
+    
+    heartbeatInterval = setInterval(() => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ action: 'heartbeat' }));
+      }
+    }, 5000); // Send heartbeat every 5 seconds
   };
   
   socket.onmessage = async (event) => {
     try {
       const message = JSON.parse(event.data);
-      console.log('Received message from Electron app:', message);
+      
+      // Don't log heartbeat acknowledgements to reduce console noise
+      if (message.action !== 'heartbeat-ack') {
+        console.log('Received message from Electron app:', message);
+      }
       
       if (message.action === 'processScreenshot') {
         const result = await processScreenshot(message.screenshot, message.prompt);
@@ -36,6 +57,12 @@ function connectWebSocket() {
   
   socket.onclose = () => {
     console.log('WebSocket connection closed');
+    
+    // Clear heartbeat interval
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
     
     // Attempt to reconnect
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -60,6 +87,18 @@ chrome.runtime.onInstalled.addListener(() => {
   connectWebSocket();
 });
 
+// When the extension is unloading, clean up
+chrome.runtime.onSuspend.addListener(() => {
+  console.log('Extension suspending, cleaning up');
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+  
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
+  }
+});
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkConnection') {
@@ -71,7 +110,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Main function to process screenshot with Gemini
-// In background.js, add more detailed logging to processScreenshot
 async function processScreenshot(screenshotBase64, prompt) {
   try {
     console.log('Starting to process screenshot');
@@ -116,7 +154,6 @@ async function processScreenshot(screenshotBase64, prompt) {
 }
 
 // Helper function to find an open Gemini tab
-// In background.js, update the findGeminiTab function
 async function findGeminiTab() {
   const tabs = await chrome.tabs.query({url: "https://gemini.google.com/*"});
   
