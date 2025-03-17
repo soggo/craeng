@@ -51,7 +51,14 @@ function connectWebSocket() {
 }
 
 // Initial connection
-connectWebSocket();
+// Initial connection with delay to ensure extension is fully loaded
+setTimeout(connectWebSocket, 1000);
+
+// Also add this event listener at the bottom of the file
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Extension installed, connecting WebSocket');
+  connectWebSocket();
+});
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -64,33 +71,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Main function to process screenshot with Gemini
+// In background.js, add more detailed logging to processScreenshot
 async function processScreenshot(screenshotBase64, prompt) {
   try {
+    console.log('Starting to process screenshot');
+    
     // Find existing Gemini tab or create a new one
     let geminiTab = await findGeminiTab();
+    console.log('Gemini tab status:', geminiTab ? 'Found' : 'Not found');
     
     if (!geminiTab) {
+      console.log('Creating new Gemini tab');
       geminiTab = await chrome.tabs.create({
         url: 'https://gemini.google.com/',
         active: false // Keep it in the background
       });
       
       // Wait for page to load
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('Waiting for Gemini tab to load');
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Increased timeout
       geminiTab = await findGeminiTab(); // Refresh tab info
+      console.log('Gemini tab after waiting:', geminiTab);
     }
     
     // Store the screenshot data in local storage
+    console.log('Storing screenshot in local storage');
     await chrome.storage.local.set({
       currentScreenshot: screenshotBase64,
       currentPrompt: prompt || "Analyze this image"
     });
     
     // Send message to content script to process the image
+    console.log('Sending message to content script');
     const response = await chrome.tabs.sendMessage(geminiTab.id, {
       action: 'processImage'
     });
     
+    console.log('Response from content script:', response);
     return response.result;
   } catch (error) {
     console.error('Error processing screenshot:', error);
@@ -99,7 +116,22 @@ async function processScreenshot(screenshotBase64, prompt) {
 }
 
 // Helper function to find an open Gemini tab
+// In background.js, update the findGeminiTab function
 async function findGeminiTab() {
   const tabs = await chrome.tabs.query({url: "https://gemini.google.com/*"});
-  return tabs.length > 0 ? tabs[0] : null;
+  
+  if (tabs.length > 0) {
+    // Ensure content script is injected
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        files: ['content.js']
+      });
+    } catch (error) {
+      console.error('Error injecting content script:', error);
+    }
+    return tabs[0];
+  }
+  
+  return null;
 }
